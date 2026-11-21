@@ -1,0 +1,11 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/A7Foody.Core/A7Foody.Core.csproj" />
+    <Project Path="src/A7Foody.Foody/A7Foody.Foody.csproj" />
+    <Project Path="src/A7Foody.Service/A7Foody.Service.csproj" />
+    <Project Path="src/A7Foody.Storage/A7Foody.Storage.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/A7Foody.Tests/A7Foody.Tests.csproj" />
+  </Folder>
+</Solution>
