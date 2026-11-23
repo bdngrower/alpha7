@@ -16,15 +16,22 @@ var builder = Host.CreateApplicationBuilder(hostArgs);
 // Configuração extra fora da pasta do executável (onde ficam os tokens em produção), além de
 // appsettings.json e variáveis de ambiente.
 var dataDir = builder.Configuration["DataDirectory"]
-    ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "A7FoodyConnector");
+    ?? (OperatingSystem.IsWindows()
+        ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "A7FoodyConnector")
+        : "/var/lib/a7foody-connector");
 builder.Configuration.AddJsonFile(Path.Combine(dataDir, "appsettings.local.json"), optional: true, reloadOnChange: false);
 builder.Configuration.AddEnvironmentVariables("A7FOODY_");
 builder.Configuration.AddCommandLine(hostArgs);
 
+// Serviço Windows ou systemd (Linux): cada um só tem efeito quando o processo foi iniciado por ele.
 builder.Services.AddWindowsService(o => o.ServiceName = "A7FoodyConnector");
+builder.Services.AddSystemd();
 builder.Services.AddSerilog((_, lc) =>
 {
-    lc.ReadFrom.Configuration(builder.Configuration);
+    // Assemblies explícitos: no publish "single file" o Serilog não consegue descobri-los sozinho.
+    lc.ReadFrom.Configuration(builder.Configuration, new Serilog.Settings.Configuration.ConfigurationReaderOptions(
+        typeof(ConsoleLoggerConfigurationExtensions).Assembly,
+        typeof(FileLoggerConfigurationExtensions).Assembly));
     if (command is null)
     {
         lc.WriteTo.File(Path.Combine(dataDir, "logs", "connector-.log"),

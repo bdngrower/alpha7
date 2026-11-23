@@ -1,6 +1,6 @@
 # Conector A7Pharma → Foody Delivery
 
-Serviço Windows que envia as vendas com entrega do **A7Pharma (Alpha7)** para a **Foody Delivery** e acompanha o status de cada entrega.
+Serviço (Linux/systemd ou Windows) que envia as vendas com entrega do **A7Pharma (Alpha7)** para a **Foody Delivery** e acompanha o status de cada entrega.
 Roda **na matriz** e atende **várias lojas**.
 
 ```
@@ -19,7 +19,7 @@ Lojas (A7Pharma) ──grava──> [Base de Integração PostgreSQL]
 | De-para venda → pedido Foody (endereço, CEP, telefone, pagamento, itens) | pronto, com testes |
 | Motor de sincronização (outbox, retry, anti-duplicidade, cancelamento, polling) | pronto, com testes |
 | Banco local SQLite | pronto |
-| Serviço Windows, configuração e logs | pronto |
+| Serviço Linux (systemd) e Windows, configuração e logs | pronto; pacote Linux testado |
 | Leitor do A7 por consultas SQL configuráveis (PostgreSQL), conexão por loja | pronto, com testes e validado contra PostgreSQL |
 | **Consultas SQL reais das vendas do PDV** | **aguardando a Alpha7 indicar a origem** ([pendências](docs/pendencias.md)) |
 | Comandos de diagnóstico `testar-foody` e `testar-a7` | pronto |
@@ -99,6 +99,8 @@ O `appsettings.json` ao lado do executável traz os padrões. **Tokens não vão
 Variáveis de ambiente com prefixo `A7FOODY_` também funcionam, por exemplo `A7FOODY_Stores__0__FoodyToken`.
 
 ## Build, testes e instalação
+
+**Linux:** ver [`deploy/linux/LEIAME.md`](deploy/linux/LEIAME.md). Recomendado: uma VM pequena e separada do servidor do A7Pharma. **Windows:** abaixo.
 
 Pré-requisito: [.NET SDK 10](https://dotnet.microsoft.com/download/dotnet/10.0). O servidor **não** precisa do runtime, porque o publish é self-contained.
 

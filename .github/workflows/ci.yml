@@ -18,7 +18,15 @@ jobs:
       - run: dotnet test --no-build -c Release
       - name: Publish (win-x64, self-contained)
         run: dotnet publish src/A7Foody.Service -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -o publish
+      - name: Publish (linux-x64, self-contained)
+        run: dotnet publish src/A7Foody.Service -c Release -r linux-x64 --self-contained -p:PublishSingleFile=true -o publish-linux
       - uses: actions/upload-artifact@v4
         with:
           name: A7FoodyConnector-win-x64
           path: publish
+      - uses: actions/upload-artifact@v4
+        with:
+          name: A7FoodyConnector-linux-x64
+          path: |
+            publish-linux
+            deploy/linux

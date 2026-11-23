@@ -7,12 +7,16 @@
 - O desenho é **e-commerce → A7**. `in_pedido`/`in_itempedido`/`in_pessoa` criam orçamentos no A7. As saídas são `out_embalagem` (produtos/estoque), `out_documentofiscalpedido` (NF) e `out_entregaremessapedido` (remessas de entrega).
 - **Não existe `out_` com as vendas do PDV.** A `out_entregaremessapedido` é ligada ao código de um `in_pedido` e não traz endereço, cliente nem itens.
 
-**Perguntas enviadas à Alpha7 (aguardando resposta):**
-- [ ] `out_entregaremessapedido` inclui remessas de vendas feitas no PDV (balcão/telefone)?
-- [ ] Existe, ou podem criar, uma `out_` com as vendas/orçamentos com entrega do PDV (endereço, cliente, itens, total, taxa, pagamento, troco, status/cancelamento)? Prazo e custo?
-- [ ] Alternativa: acesso de leitura ao banco do A7Pharma, com indicação das tabelas de orçamento, entrega/remessa, cliente e endereço. Qual é o SGBD e a versão?
-- [ ] Multi-loja: a integração é configurada em cada loja ou centralizada? Como identificar a loja nos registros?
-- [ ] De quanto em quanto tempo o A7 grava nas tabelas `out_`? Dá para usar cerca de 1 minuto?
+**Respostas da Alpha7:**
+- As tabelas da base externa servem só à integração deles. **Caminho escolhido: usuário somente leitura no banco do A7Pharma** (PostgreSQL 14).
+- A base externa é uma por CNPJ. Pode ser centralizada, mas aí não separa estoque nem pedidos por loja.
+- A base externa atualiza a cada ~20 s. Não se aplica à leitura direta.
+
+**Pendente:**
+- [ ] Usuário de leitura no PostgreSQL do A7Pharma, liberado para o IP da VM do conector. Qual é o nome do banco?
+- [ ] Tabelas de venda/orçamento com entrega, itens, cliente/endereço, pagamento/troco, cancelamento e remessa de entrega. Há coluna de data de alteração?
+- [ ] As outras lojas usam o mesmo servidor ou cada uma tem o seu?
+- [ ] VM para o conector: criar uma VM Linux pequena (recomendado) e definir o IP dela.
 
 **Como o conector já está preparado:** o leitor executa as consultas em `src/A7Foody.Service/sql/` (contrato em `sql/LEIAME.md`). Qualquer que seja a resposta, só os arquivos `.sql` e a string de conexão mudam. Os modelos atuais apontam para uma tabela hipotética `out_vendaentrega`.
 
