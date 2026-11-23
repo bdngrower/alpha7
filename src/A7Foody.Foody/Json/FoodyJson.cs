@@ -16,6 +16,9 @@ public static class FoodyJson
         {
             DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
             TypeInfoResolver = new System.Text.Json.Serialization.Metadata.DefaultJsonTypeInfoResolver(),
+
+            // Acentos legíveis no JSON (vai para API e banco local, nunca para HTML).
+            Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
         };
         o.Converters.Add(new FoodyDateTimeOffsetConverter());
         o.MakeReadOnly();

@@ -62,9 +62,9 @@ public sealed class FoodyOrderMapper(MappingOptions options)
             Date = sale.CreatedAt,
             DeliveryDueDate = sale.DueAt,
             Status = options.CreateAsReady ? FoodyOrderStatus.Ready : FoodyOrderStatus.Open,
-            DeliveryFee = sale.DeliveryFee,
-            CourierFee = options.CourierFee,
-            OrderTotal = sale.Total,
+            DeliveryFee = Money(sale.DeliveryFee),
+            CourierFee = Money(options.CourierFee),
+            OrderTotal = Money(sale.Total),
             PaymentMethod = MapPayment(sale.PaymentCode),
             OrderDetails = BuildDetails(sale.Items),
             Notes = BuildNotes(sale),
@@ -75,6 +75,10 @@ public sealed class FoodyOrderMapper(MappingOptions options)
 
         return new MappingResult(order, []);
     }
+
+    /// <summary>A Foody usa 2 casas; o A7 guarda numeric(15,4).</summary>
+    private static decimal? Money(decimal? value) =>
+        value is null ? null : decimal.Round(value.Value, 2, MidpointRounding.AwayFromZero);
 
     private FoodyPaymentMethod? MapPayment(string? code) =>
         code is not null && _payments.TryGetValue(code.Trim(), out var m) ? m : options.DefaultPaymentMethod;

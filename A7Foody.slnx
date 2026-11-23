@@ -1,5 +1,6 @@
 <Solution>
   <Folder Name="/src/">
+    <Project Path="src/A7Foody.A7/A7Foody.A7.csproj" />
     <Project Path="src/A7Foody.Core/A7Foody.Core.csproj" />
     <Project Path="src/A7Foody.Foody/A7Foody.Foody.csproj" />
     <Project Path="src/A7Foody.Service/A7Foody.Service.csproj" />

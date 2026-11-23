@@ -4,8 +4,8 @@ Serviço Windows que envia as vendas com entrega do **A7Pharma (Alpha7)** para a
 Roda **na matriz** e atende **várias lojas**.
 
 ```
-Lojas ──(replicação A7)──> [Banco A7 na matriz]
-                                  │ leitura (Base Externa da Alpha7)
+Lojas (A7Pharma) ──grava──> [Base de Integração PostgreSQL]
+                                  │ leitura por SQL configurável
                           [A7FoodyConnector — serviço Windows]
                            ├─ SQLite local: vínculo venda ↔ pedido Foody, outbox, cursores
                            └─ REST ──> Foody API v1.2 (um token por loja/conta)
@@ -20,7 +20,9 @@ Lojas ──(replicação A7)──> [Banco A7 na matriz]
 | Motor de sincronização (outbox, retry, anti-duplicidade, cancelamento, polling) | pronto, com testes |
 | Banco local SQLite | pronto |
 | Serviço Windows, configuração e logs | pronto |
-| **Leitura das vendas no A7Pharma** | **aguardando documentação da Alpha7** ([pendências](docs/pendencias.md)) |
+| Leitor do A7 por consultas SQL configuráveis (PostgreSQL), conexão por loja | pronto, com testes e validado contra PostgreSQL |
+| **Consultas SQL reais das vendas do PDV** | **aguardando a Alpha7 indicar a origem** ([pendências](docs/pendencias.md)) |
+| Comandos de diagnóstico `testar-foody` e `testar-a7` | pronto |
 | Retorno do status ao A7Pharma | depende da Alpha7 permitir escrita |
 | Webhooks da Foody (no lugar do polling) | fase 2 |
 
@@ -31,10 +33,11 @@ Lojas ──(replicação A7)──> [Banco A7 na matriz]
 | `src/A7Foody.Foody` | Cliente HTTP da Foody: modelos, JSON (datas `-03:00`, enums `on_credit`/`onGoing`), erros, resiliência. Não conhece o A7. |
 | `src/A7Foody.Core` | Modelo neutro da venda (`DeliverySale`), de-para, motor (`OrderSyncEngine`), portas `ISalesSource` / `IDeliveryStatusSink` / `IOrderStore`. |
 | `src/A7Foody.Storage` | `IOrderStore` em SQLite (Dapper). |
+| `src/A7Foody.A7` | Leitor das vendas do A7 (`ISalesSource`) por consultas em arquivo; cursor incremental por data de alteração + id. |
 | `src/A7Foody.Service` | Host: serviço Windows, configuração, logs (Serilog), laço de ciclos. |
 | `tests/A7Foody.Tests` | xUnit: cliente com HTTP simulado, de-para e motor com Foody falsa e SQLite real. |
 
-O adaptador do A7Pharma vai entrar como `src/A7Foody.A7`, implementando `ISalesSource`. **Só ele conhece o banco da Alpha7.** Se a Alpha7 mudar o banco ou lançar uma API, só esse projeto muda.
+**Nenhum nome de tabela do A7 está no código.** O leitor executa `sql/vendas-entrega.sql` e `sql/itens-venda.sql`, e o contrato de colunas está em [`sql/LEIAME.md`](src/A7Foody.Service/sql/LEIAME.md). Se a Alpha7 mudar o banco, criar uma tabela nova ou liberar leitura direta, só os arquivos `.sql` mudam, sem recompilar.
 
 ## Como funciona um ciclo (a cada 30 s, por loja)
 
@@ -89,6 +92,8 @@ O `appsettings.json` ao lado do executável traz os padrões. **Tokens não vão
 | `Mapping:CreateAsReady` | `true` | Use `false` se a separação acontecer depois do caixa. |
 | `Sync:Interval` | `00:00:30` | A Foody pede no mínimo 30 s; valores menores são ignorados. |
 | `Sync:AutoCloseDelivered` | `true` | Envia `closed` depois de `delivered`. |
+| `A7:ConnectionStrings:<StoreId>` | — | PostgreSQL da Base de Integração (ou do A7) da loja. Sem nenhuma, o conector não lê vendas. |
+| `A7:FirstRunLookback` | `00:00:00` | Na 1ª execução, só lê vendas novas. **Não** aumente em produção: venda antiga chamaria motoboy. |
 | `DataDirectory` | `%ProgramData%\A7FoodyConnector` | Pasta do banco, dos logs e do `appsettings.local.json`. |
 
 Variáveis de ambiente com prefixo `A7FOODY_` também funcionam, por exemplo `A7FOODY_Stores__0__FoodyToken`.
@@ -112,6 +117,20 @@ sc.exe create A7FoodyConnector binPath= "C:\A7FoodyConnector\A7FoodyConnector.ex
 sc.exe failure A7FoodyConnector reset= 86400 actions= restart/60000/restart/60000/restart/60000
 sc.exe start A7FoodyConnector
 ```
+
+## Diagnóstico (homologação)
+
+Os dois comandos abaixo não criam pedido nem gravam no banco do conector:
+
+```bash
+A7FoodyConnector.exe testar-foody --loja 1
+```
+
+```bash
+A7FoodyConnector.exe testar-a7 --loja 1 --desde "2026-11-20 08:00"
+```
+
+`testar-foody` valida o token, ou acusa E19 (token errado) e E11 (plano sem API). `testar-a7` lista as vendas encontradas e o JSON que iria para a Foody, ou o motivo de não enviar.
 
 ## Operação
 

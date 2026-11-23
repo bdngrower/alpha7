@@ -1,19 +1,20 @@
 # Pendências
 
-## Alpha7: bloqueia a leitura das vendas
+## Alpha7: de onde vêm as vendas do PDV
 
-O caminho previsto é a **Integração Via Base Externa**, um banco compartilhado que exige assinar um termo de consentimento com o administrativo da Alpha7. Uma alternativa é o **acesso de leitura ao banco do A7Pharma**. Referências: [Base Externa](https://kb.a7.net.br/A7Pharma:O_Que_%C3%A9_a_Integra%C3%A7%C3%A3o_Via_Base_Externa%3F) e [acesso de leitura](https://kb.a7.net.br/A7Pharma:Acesso_de_Leitura_ao_banco_de_dados_do_A7Pharma).
+**O que a documentação mostrou** ("Base de Dados para Integrações Externas", v2, recebida em 23/11/2026):
+- A Base Externa é um banco PostgreSQL ou MySQL **hospedado pelo integrador**. O A7 grava nas tabelas `out_` e lê as `in_`. Não há campo de loja: a configuração parece ser **por loja**.
+- O desenho é **e-commerce → A7**. `in_pedido`/`in_itempedido`/`in_pessoa` criam orçamentos no A7. As saídas são `out_embalagem` (produtos/estoque), `out_documentofiscalpedido` (NF) e `out_entregaremessapedido` (remessas de entrega).
+- **Não existe `out_` com as vendas do PDV.** A `out_entregaremessapedido` é ligada ao código de um `in_pedido` e não traz endereço, cliente nem itens.
 
-- [ ] Documento **"Base de Dados para Integrações Externas"**: tabelas, campos e SGBD (SQL Server, PostgreSQL, Firebird?).
-- [ ] Onde ficam as **vendas ou orçamentos com entrega do PDV**, e qual campo indica que a venda é de entrega.
-- [ ] Em que momento a venda está **pronta para despachar**: orçamento ou venda fechada no caixa?
-- [ ] Campos disponíveis: endereço (logradouro, número, bairro, cidade, UF, CEP, complemento, referência), cliente, telefone, itens, total, taxa de entrega, forma de pagamento e troco.
-- [ ] Como identificar uma **venda cancelada**.
-- [ ] Campo confiável para servir de **cursor incremental**: data de alteração, ID sequencial ou rowversion.
-- [ ] Tamanho e formato do **número da venda**. A Foody aceita no máximo 10 caracteres.
-- [ ] As vendas de **todas as lojas** chegam ao banco da matriz? Com qual atraso de replicação?
-- [ ] É possível **gravar o status da entrega** de volta (despachado, em rota, entregue)? Em qual tabela?
-- [ ] Custo, prazo e termo de consentimento.
+**Perguntas enviadas à Alpha7 (aguardando resposta):**
+- [ ] `out_entregaremessapedido` inclui remessas de vendas feitas no PDV (balcão/telefone)?
+- [ ] Existe, ou podem criar, uma `out_` com as vendas/orçamentos com entrega do PDV (endereço, cliente, itens, total, taxa, pagamento, troco, status/cancelamento)? Prazo e custo?
+- [ ] Alternativa: acesso de leitura ao banco do A7Pharma, com indicação das tabelas de orçamento, entrega/remessa, cliente e endereço. Qual é o SGBD e a versão?
+- [ ] Multi-loja: a integração é configurada em cada loja ou centralizada? Como identificar a loja nos registros?
+- [ ] De quanto em quanto tempo o A7 grava nas tabelas `out_`? Dá para usar cerca de 1 minuto?
+
+**Como o conector já está preparado:** o leitor executa as consultas em `src/A7Foody.Service/sql/` (contrato em `sql/LEIAME.md`). Qualquer que seja a resposta, só os arquivos `.sql` e a string de conexão mudam. Os modelos atuais apontam para uma tabela hipotética `out_vendaentrega`.
 
 ## Foody
 

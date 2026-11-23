@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Net.Http.Json;
+using System.Text.Json;
 using A7Foody.Foody.Json;
 using A7Foody.Foody.Models;
 
@@ -156,7 +157,10 @@ internal sealed class FoodyClient(HttpClient http, string token) : IFoodyClient
         request.Headers.TryAddWithoutValidation("Authorization", token);
         if (body is not null)
         {
-            request.Content = JsonContent.Create(body, body.GetType(), options: FoodyJson.Options);
+            // Corpo com Content-Length (StringContent) em vez de JsonContent, que envia em "chunked":
+            // servidores mais antigos não leem corpo sem tamanho declarado.
+            var json = JsonSerializer.Serialize(body, body.GetType(), FoodyJson.Options);
+            request.Content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
         }
 
         var response = await http.SendAsync(request, ct).ConfigureAwait(false);

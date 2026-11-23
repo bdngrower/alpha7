@@ -13,8 +13,12 @@
     <PackageReference Include="Serilog.Sinks.File" />
   </ItemGroup>
   <ItemGroup>
+    <None Update="sql\**\*" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\A7Foody.Core\A7Foody.Core.csproj" />
     <ProjectReference Include="..\A7Foody.Storage\A7Foody.Storage.csproj" />
     <ProjectReference Include="..\A7Foody.Foody\A7Foody.Foody.csproj" />
+    <ProjectReference Include="..\A7Foody.A7\A7Foody.A7.csproj" />
   </ItemGroup>
 </Project>

@@ -83,6 +83,18 @@ public sealed class OrderSyncEngine(
         }
 
         var mapped = mapper.Map(sale);
+        var payload = mapped.Order is null ? null : JsonSerializer.Serialize(mapped.Order, FoodyJson.Options);
+        var errors = mapped.IsValid ? null : string.Join("; ", mapped.Errors);
+
+        // Mesma venda lida de novo sem mudança no que seria enviado: nada a fazer. Isso preserva o backoff
+        // de um envio pendente e impede que um pedido recusado pela Foody (400) seja reenviado sem correção.
+        if (existing is not null && existing.PayloadJson == payload && (payload is not null || existing.LastError == errors))
+        {
+            return;
+        }
+
+        // Pendente que mudou (ex.: endereço corrigido antes do envio): troca o conteúdo, mantém o backoff.
+        var keepBackoff = existing is { State: SyncState.PendingCreate } && mapped.IsValid;
         var order = new TrackedOrder
         {
             StoreId = sale.StoreId,
@@ -90,10 +102,10 @@ public sealed class OrderSyncEngine(
             SaleCreatedAt = sale.CreatedAt,
             FoodyOrderId = mapped.Order?.Id ?? mapper.BuildOrderId(sale),
             State = mapped.IsValid ? SyncState.PendingCreate : SyncState.NeedsAttention,
-            PayloadJson = mapped.Order is null ? null : JsonSerializer.Serialize(mapped.Order, FoodyJson.Options),
-            LastError = mapped.IsValid ? null : string.Join("; ", mapped.Errors),
-            Attempts = 0,
-            NextAttemptAt = now,
+            PayloadJson = payload,
+            LastError = keepBackoff ? existing!.LastError : errors,
+            Attempts = keepBackoff ? existing!.Attempts : 0,
+            NextAttemptAt = keepBackoff ? existing!.NextAttemptAt : now,
             CreatedAt = existing?.CreatedAt ?? now,
             UpdatedAt = now,
         };

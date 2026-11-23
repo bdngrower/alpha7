@@ -39,6 +39,7 @@ public class FoodyClientTests
         Assert.Equal(HttpMethod.Post, req.Method);
         Assert.Equal("https://app.foodydelivery.com/rest/1.2/orders", req.RequestUri!.ToString());
         Assert.Equal("tok-123", req.Headers.GetValues("Authorization").Single()); // sem "Bearer"
+        Assert.NotNull(req.Content!.Headers.ContentLength); // sem chunked
 
         using var json = JsonDocument.Parse(body!);
         var root = json.RootElement;

@@ -116,12 +116,34 @@ public sealed class SyncEngineTests : IDisposable
         Assert.Contains("E12", t.LastError, StringComparison.Ordinal);
 
         _clock.Advance(TimeSpan.FromHours(1));
+        _source.Push(Samples.Sale()); // relida sem mudança
         await Cycle();
         Assert.Single(_foody.CreateCalls); // não fica insistindo com dado ruim
 
-        _source.Push(Samples.Sale()); // cadastro corrigido no A7 → venda volta como alterada
+        var fixedSale = Samples.Sale() with { Address = Samples.Sale().Address with { Number = "120A" } };
+        _source.Push(fixedSale); // cadastro corrigido no A7 → venda volta como alterada
         await Cycle();
         Assert.Equal(SyncState.Tracking, (await Tracked())!.State);
+        Assert.Equal(2, _foody.CreateCalls.Count);
+    }
+
+    [Fact]
+    public async Task Rereading_a_pending_sale_keeps_the_backoff()
+    {
+        _foody.OnCreate = _ => throw FakeFoody.Error(HttpStatusCode.TooManyRequests, "EC_B010");
+        _source.Push(Samples.Sale());
+        await Cycle();
+        var before = (await Tracked())!;
+
+        _source.Push(Samples.Sale()); // mesma venda
+        _source.Push(Samples.Sale() with { Notes = "Interfone 12" }); // alterada antes do envio
+        await Cycle();
+
+        var after = (await Tracked())!;
+        Assert.Equal(before.NextAttemptAt, after.NextAttemptAt);
+        Assert.Equal(1, after.Attempts);
+        Assert.Contains("Interfone 12", after.PayloadJson, StringComparison.Ordinal);
+        Assert.Single(_foody.CreateCalls);
     }
 
     [Fact]

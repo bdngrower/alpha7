@@ -17,5 +17,6 @@
     <ProjectReference Include="..\..\src\A7Foody.Core\A7Foody.Core.csproj" />
     <ProjectReference Include="..\..\src\A7Foody.Storage\A7Foody.Storage.csproj" />
     <ProjectReference Include="..\..\src\A7Foody.Foody\A7Foody.Foody.csproj" />
+    <ProjectReference Include="..\..\src\A7Foody.A7\A7Foody.A7.csproj" />
   </ItemGroup>
 </Project>
